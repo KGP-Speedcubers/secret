@@ -3,10 +3,7 @@
 </script>
 
 <main>
-
-
   <div class="card">
     <Counter />
   </div>
-
 </main>

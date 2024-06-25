@@ -1,10 +1,14 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import Scramble from './Scramble.svelte';
+  
   let time = 0;
   let interval: number | undefined;
   let timerColor = 'white';
   let isTimerRunning = false;
+  let isKeyPressed = false;
+  let keyPressTime = 0;
+  let keyPressInterval: number | undefined;
 
   const startTimer = () => {
     time = 0;
@@ -31,13 +35,16 @@
 
   const handleKeyUp = (event: KeyboardEvent) => {
     if (event.code === 'Space') {
-      toggleTimer();
+      if (keyPressTime >= 55 || isTimerRunning){
+        toggleTimer();
+      }
+      isKeyPressed = false;
     }
   };
 
   const handleKeyDown = (event: KeyboardEvent) => {
     if (event.code === 'Space' && !isTimerRunning) {
-      timerColor = 'green';
+      isKeyPressed = true;
     }
   };
 
@@ -53,6 +60,23 @@
       clearInterval(interval);
     }
   });
+
+  $: {
+    if (isKeyPressed) {
+      timerColor = 'red';
+      clearInterval(keyPressInterval);
+      keyPressInterval = setInterval(() => {
+        keyPressTime += 1;
+      }, 10)
+      if (keyPressTime >= 55) {
+        timerColor = 'green';
+      }
+    } else {
+      timerColor = 'white';
+      clearInterval(keyPressInterval);
+      keyPressTime = 0;
+    }
+  }
 </script>
 
 
