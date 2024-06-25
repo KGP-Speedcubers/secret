@@ -3,48 +3,107 @@
   import Scramble from './Scramble.svelte';
   
   let time = 0;
+  let inspectionWarning: string = "";
   let interval: number | undefined;
   let timerColor = 'white';
-  let isTimerRunning = false;
-  let isKeyPressed = false;
   let keyPressTime = 0;
+  let isKeyPressed: boolean = false;
+  let inspectionTime = 0;
+  let inspectionInterval: number | undefined;
   let keyPressInterval: number | undefined;
+  let status: 1 | 2 | 3 | 4 = 1;
+  // 1 = no key pressed
+  // 2 = spacebar pressed
+  // 3 = inspection
+  // 4 = timing
 
   const startTimer = () => {
     time = 0;
     interval = setInterval(() => {
       time += 1;
     }, 10);
-    isTimerRunning = true;
+    status = 4;
     timerColor = 'white';
   };
 
   const stopTimer = () => {
     clearInterval(interval);
     interval = undefined;
-    isTimerRunning = false;
+    status = 1;
   };
 
   const toggleTimer = () => {
-    if (isTimerRunning) {
+    if (status === 4) {
       stopTimer();
-    } else {
+    } else if (status === 3) {
       startTimer();
     }
   };
 
+  const startInspection = () => {
+    time = 0;
+    status = 3;
+  }
+
+  // set inspection timer and update inspection warning
+  $: {
+    if (status === 3){
+      clearInterval(inspectionInterval);
+      inspectionInterval = setInterval(() => {
+        inspectionTime += 1;
+      }, 1000)
+      switch (inspectionTime) {
+        case 15:
+          inspectionWarning = "+2";
+          break;
+        case 17: 
+          inspectionWarning = "DNF";
+          break;
+        case 12:
+          inspectionWarning = "12s";
+          break;
+        case 8: 
+          inspectionWarning = "8s";
+          break;
+      }
+    } else {
+      inspectionTime = 0;
+      inspectionWarning = "";
+      clearInterval(inspectionInterval);
+    }
+  }
+
   const handleKeyUp = (event: KeyboardEvent) => {
     if (event.code === 'Space') {
-      if (keyPressTime >= 55 || isTimerRunning){
-        toggleTimer();
+      switch(status){
+        case 2: 
+          isKeyPressed = false;
+          startInspection();
+          break;
+        case 3:
+          isKeyPressed = false;
+          if (keyPressTime >= 55) {
+            toggleTimer();
+          }
+          break;
+        case 4: 
+          isKeyPressed = false;
+          break;
+        default: 
+          isKeyPressed = false;
       }
-      isKeyPressed = false;
     }
   };
 
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.code === 'Space' && !isTimerRunning) {
+    if (event.code === 'Space' && (status === 1)) {
+      status = 2;
       isKeyPressed = true;
+    } else if (event.code === 'Space' && (status === 3)) {
+      isKeyPressed = true;
+    } else if (event.code === 'Space' && (status === 4)) {
+      isKeyPressed = true;
+      toggleTimer();
     }
   };
 
@@ -63,17 +122,28 @@
 
   $: {
     if (isKeyPressed) {
-      timerColor = 'red';
-      clearInterval(keyPressInterval);
-      keyPressInterval = setInterval(() => {
+      // timerColor = 'red';
+      if (status === 1) {
+        timerColor = "white";
+        clearInterval(keyPressInterval);
+        keyPressInterval = setInterval(() => {
         keyPressTime += 1;
-      }, 10)
-      if (keyPressTime >= 55) {
-        timerColor = 'green';
+      }, 10);
+      }
+      else if (status === 3) {
+        timerColor = "red";
+        clearInterval(keyPressInterval);
+        keyPressInterval = setInterval(() => {
+          keyPressTime += 1;
+        }, 10);
+        if (keyPressTime >= 55) {
+          timerColor = "green";
+        }
+      } else {
+        keyPressTime = 0;
+        clearInterval(keyPressInterval);
       }
     } else {
-      timerColor = 'white';
-      clearInterval(keyPressInterval);
       keyPressTime = 0;
     }
   }
@@ -83,6 +153,8 @@
 <main class="timer-container">
   <Scramble />
   <div class="timer" style="color: {timerColor}">
-    {(time / 100).toFixed(2)}
+    inspection time: {15 - inspectionTime} <br>
+    {(time / 100).toFixed(2)} <br>
+    {inspectionWarning} <br>
   </div>
 </main>
