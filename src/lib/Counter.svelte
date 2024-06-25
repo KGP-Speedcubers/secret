@@ -3,6 +3,10 @@
   import Scramble from './Scramble.svelte';
   
   let time = 0;
+  let penalty: 0 | 1 | 2 = 0;
+  // 0 = no penalty
+  // 1 = +2
+  // 2 = DNF
   let inspectionWarning: string = "";
   let interval: number | undefined;
   let timerColor = 'white';
@@ -28,6 +32,7 @@
 
   const stopTimer = () => {
     clearInterval(interval);
+    time = setPenalty(time, penalty);
     interval = undefined;
     status = 1;
   };
@@ -42,7 +47,20 @@
 
   const startInspection = () => {
     time = 0;
+    penalty = 0;
+    timerColor = "pink";
     status = 3;
+  }
+
+  const setPenalty = (time: number, penalty: 0 | 1 | 2) => {
+    switch (penalty) {
+      case 1: 
+        return time + 200;
+      case 2: 
+        return Infinity;
+      default: 
+        return time;
+    }
   }
 
   // set inspection timer and update inspection warning
@@ -54,9 +72,11 @@
       }, 1000)
       switch (inspectionTime) {
         case 15:
+          penalty = 1;
           inspectionWarning = "+2";
           break;
         case 17: 
+          penalty = 2;
           inspectionWarning = "DNF";
           break;
         case 12:
@@ -122,7 +142,6 @@
 
   $: {
     if (isKeyPressed) {
-      // timerColor = 'red';
       if (status === 1) {
         timerColor = "white";
         clearInterval(keyPressInterval);
@@ -153,8 +172,20 @@
 <main class="timer-container">
   <Scramble />
   <div class="timer" style="color: {timerColor}">
-    inspection time: {15 - inspectionTime} <br>
-    {(time / 100).toFixed(2)} <br>
-    {inspectionWarning} <br>
+    <div class="penalty-menu">
+      <button on:click={() => time = setPenalty(time, 0)}>-</button>
+      <button on:click={() => time = setPenalty(time, 1)}>+2</button>
+      <button on:click={() => time = setPenalty(time, 2)}>DNF</button>
+    </div>
+    <h1>{(time / 100).toFixed(2)}</h1>
+    <h2>{15 - inspectionTime}</h2>
+    <h3>{inspectionWarning}</h3>
   </div>
 </main>
+
+<style>
+  .penalty-menu {
+    font-size: 1.5rem;
+    display: inline-block;
+  }
+</style>

@@ -6,9 +6,14 @@
 }
 
 .timer {
-    font-size: 6rem;
+    font-size: 2rem;
     font-family: monospace;
     user-select: none;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
 
     margin-top: 10%;
     margin-bottom: 10%;
