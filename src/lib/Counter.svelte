@@ -1,185 +1,186 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import Scramble from './Scramble.svelte';
+  import { onMount, onDestroy } from "svelte";
+  import { Times } from "../utils/stores";
+  import { displayedTime } from "../utils/timer"
+  import type { inspectionObject, status, timeObject, timerObject } from "../types/types";
+
+  let counter = 0;
+
+  $Times.push( {
+    time: 0,
+    penalty: "none",
+  } )
+
+  let Timer: timerObject = {
+    isKeyPressed: false,
+    keyPressTime: 0,
+    timerColor: "white",
+    timerStatus: "idle",
+  }
   
-  let time = 0;
-  let penalty: 0 | 1 | 2 = 0;
-  // 0 = no penalty
-  // 1 = +2
-  // 2 = DNF
-  let inspectionWarning: string = "";
+  let inspection: inspectionObject = {
+    time: 0,
+    warning: "",
+  }
+
+
   let interval: number | undefined;
-  let timerColor = 'white';
-  let keyPressTime = 0;
-  let isKeyPressed: boolean = false;
-  let inspectionTime = 0;
   let inspectionInterval: number | undefined;
   let keyPressInterval: number | undefined;
-  let status: 1 | 2 | 3 | 4 = 1;
-  // 1 = no key pressed
-  // 2 = spacebar pressed
-  // 3 = inspection
-  // 4 = timing
 
   const startTimer = () => {
-    time = 0;
+    $Times[counter].time = 0;
+    $Times[counter].penalty = "none";
     interval = setInterval(() => {
-      time += 1;
+      $Times[counter].time += 1;
     }, 10);
-    status = 4;
-    timerColor = 'white';
+    Timer.timerStatus = "solving";
+    Timer.timerColor = "white";
   };
 
   const stopTimer = () => {
+    $Times.push({
+    time: 0,
+    penalty: "none",
+    })
+    counter++;
     clearInterval(interval);
-    time = setPenalty(time, penalty);
+    $Times = $Times;
     interval = undefined;
-    status = 1;
+    Timer.timerStatus = "idle"
+    Timer.isKeyPressed = false;
+    Timer.keyPressTime = 0;
   };
 
   const toggleTimer = () => {
-    if (status === 4) {
+    if (Timer.timerStatus === "solving") {
       stopTimer();
-    } else if (status === 3) {
+    } else if (Timer.timerStatus === "inspection") {
       startTimer();
     }
   };
 
   const startInspection = () => {
-    time = 0;
-    penalty = 0;
-    timerColor = "pink";
-    status = 3;
-  }
-
-  const setPenalty = (time: number, penalty: 0 | 1 | 2) => {
-    switch (penalty) {
-      case 1: 
-        return time + 200;
-      case 2: 
-        return Infinity;
-      default: 
-        return time;
-    }
-  }
+    $Times[counter].time = 0;
+    $Times[counter].penalty = "none";
+    Timer.timerColor = "pink";
+    Timer.timerStatus = "inspection";
+  };
 
   // set inspection timer and update inspection warning
   $: {
-    if (status === 3){
+    if (Timer.timerStatus === "inspection") {
       clearInterval(inspectionInterval);
       inspectionInterval = setInterval(() => {
-        inspectionTime += 1;
-      }, 1000)
-      switch (inspectionTime) {
+        inspection.time += 1;
+      }, 1000);
+      switch (inspection.time) {
         case 15:
-          penalty = 1;
-          inspectionWarning = "+2";
+          $Times[counter].penalty = "+2";
+          inspection.warning = "+2";
           break;
-        case 17: 
-          penalty = 2;
-          inspectionWarning = "DNF";
+        case 17:
+          $Times[counter].penalty = "DNF";
+          inspection.warning = "DNF";
           break;
         case 12:
-          inspectionWarning = "12s";
+          inspection.warning = "12s";
           break;
-        case 8: 
-          inspectionWarning = "8s";
+        case 8:
+          inspection.warning = "8s";
           break;
       }
     } else {
-      inspectionTime = 0;
-      inspectionWarning = "";
+      inspection.time = 0;
+      inspection.warning = "";
       clearInterval(inspectionInterval);
     }
   }
 
   const handleKeyUp = (event: KeyboardEvent) => {
-    if (event.code === 'Space') {
-      switch(status){
-        case 2: 
-          isKeyPressed = false;
+    if (event.code === "Space") {
+      switch (Timer.timerStatus) {
+        case "keyPressed":
+          Timer.isKeyPressed = false;
           startInspection();
           break;
-        case 3:
-          isKeyPressed = false;
-          if (keyPressTime >= 55) {
+        case "inspection":
+          Timer.isKeyPressed = false;
+          if (Timer.keyPressTime >= 55) {
             toggleTimer();
           }
           break;
-        case 4: 
-          isKeyPressed = false;
+        case "solving":
+          Timer.isKeyPressed = false;
           break;
-        default: 
-          isKeyPressed = false;
+        default:
+          Timer.isKeyPressed = false;
       }
     }
   };
 
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.code === 'Space' && (status === 1)) {
-      status = 2;
-      isKeyPressed = true;
-    } else if (event.code === 'Space' && (status === 3)) {
-      isKeyPressed = true;
-    } else if (event.code === 'Space' && (status === 4)) {
-      isKeyPressed = true;
+    if (event.code === "Space" && Timer.timerStatus === "idle") {
+      Timer.timerStatus = "keyPressed";
+      Timer.isKeyPressed = true;
+    } else if (event.code === "Space" && Timer.timerStatus === "inspection") {
+      Timer.isKeyPressed = true;
+    } else if (event.code === "Space" && Timer.timerStatus === "solving") {
+      Timer.isKeyPressed = true;
       toggleTimer();
     }
   };
 
   onMount(() => {
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    window.addEventListener("keydown", handleKeyDown);
   });
 
   onDestroy(() => {
-    window.removeEventListener('keyup', handleKeyUp);
-    window.removeEventListener('keydown', handleKeyDown);
+    window.removeEventListener("keyup", handleKeyUp);
+    window.removeEventListener("keydown", handleKeyDown);
     if (interval) {
       clearInterval(interval);
     }
   });
 
   $: {
-    if (isKeyPressed) {
-      if (status === 1) {
-        timerColor = "white";
+    if (Timer.isKeyPressed) {
+      if (Timer.timerStatus === "idle") {
+        Timer.timerColor = "white";
         clearInterval(keyPressInterval);
         keyPressInterval = setInterval(() => {
-        keyPressTime += 1;
-      }, 10);
-      }
-      else if (status === 3) {
-        timerColor = "red";
-        clearInterval(keyPressInterval);
-        keyPressInterval = setInterval(() => {
-          keyPressTime += 1;
+          Timer.keyPressTime += 1;
         }, 10);
-        if (keyPressTime >= 55) {
-          timerColor = "green";
+      } else if (Timer.timerStatus === "inspection") {
+        Timer.timerColor = "red";
+        clearInterval(keyPressInterval);
+        keyPressInterval = setInterval(() => {
+          Timer.keyPressTime += 1;
+        }, 10);
+        if (Timer.keyPressTime >= 55) {
+          Timer.timerColor = "green";
         }
       } else {
-        keyPressTime = 0;
+        Timer.keyPressTime = 0;
         clearInterval(keyPressInterval);
       }
     } else {
-      keyPressTime = 0;
+      Timer.keyPressTime = 0;
     }
   }
 </script>
 
-
 <main class="timer-container">
-  <Scramble />
-  <div class="timer" style="color: {timerColor}">
+  <div class="timer" style="color: {Timer.timerColor}">
     <div class="penalty-menu">
-      <button on:click={() => time = setPenalty(time, 0)}>-</button>
-      <button on:click={() => time = setPenalty(time, 1)}>+2</button>
-      <button on:click={() => time = setPenalty(time, 2)}>DNF</button>
+      <button on:click={() => $Times[counter - 1].penalty = "none"}>-</button>
+      <button on:click={() => $Times[counter - 1].penalty = "+2"}>+2</button>
+      <button on:click={() => $Times[counter - 1].penalty = "DNF"}>DNF</button>
     </div>
-    <h1>{(time / 100).toFixed(2)}</h1>
-    <h2>{15 - inspectionTime}</h2>
-    <h3>{inspectionWarning}</h3>
+    <h1>{displayedTime($Times[counter])}</h1>
+    <h2>{15 - inspection.time}</h2>
+    <h3>{inspection.warning}</h3>
   </div>
 </main>
 
