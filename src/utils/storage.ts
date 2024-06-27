@@ -1,8 +1,10 @@
-export const LocalStorgeCreate = (key: string, value: number[]) => {
+import type { timeList } from "../types/types";
+
+export const LocalStorgeCreate = (key: string, value: timeList) => {
     localStorage.setItem(key, JSON.stringify(value));
 }
 
-export const LocalStorgeUpdate = (key: string, updatedValue: number[]) => {
+export const LocalStorgeUpdate = (key: string, updatedValue: timeList) => {
     localStorage.setItem(key, JSON.stringify(updatedValue));
 }
 

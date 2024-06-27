@@ -1,4 +1,4 @@
-import type { timeList, timeObject } from "../types/types";
+import type { timeObject } from "../types/types";
 
 export const displayedTime = (time: timeObject) => {
     switch (time.penalty) {
@@ -12,3 +12,5 @@ export const displayedTime = (time: timeObject) => {
             return "0.00";
     }
 }
+
+

@@ -2,14 +2,9 @@
   import { onMount, onDestroy } from "svelte";
   import { Times } from "../utils/stores";
   import { displayedTime } from "../utils/timer"
-  import type { inspectionObject, status, timeObject, timerObject } from "../types/types";
+  import type { inspectionObject, timerObject } from "../types/types";
 
-  let counter = 0;
-
-  $Times.push( {
-    time: 0,
-    penalty: "none",
-  } )
+  let counter = -1; // solve number
 
   let Timer: timerObject = {
     isKeyPressed: false,
@@ -24,13 +19,11 @@
   }
 
 
-  let interval: number | undefined;
+  let interval: number | undefined; // time interval
   let inspectionInterval: number | undefined;
   let keyPressInterval: number | undefined;
 
   const startTimer = () => {
-    $Times[counter].time = 0;
-    $Times[counter].penalty = "none";
     interval = setInterval(() => {
       $Times[counter].time += 1;
     }, 10);
@@ -38,12 +31,9 @@
     Timer.timerColor = "white";
   };
 
+  // things that should happen on start timer?
+
   const stopTimer = () => {
-    $Times.push({
-    time: 0,
-    penalty: "none",
-    })
-    counter++;
     clearInterval(interval);
     $Times = $Times;
     interval = undefined;
@@ -51,6 +41,9 @@
     Timer.isKeyPressed = false;
     Timer.keyPressTime = 0;
   };
+
+  // things that should happen on stop timer?
+  // - add new time to $Times
 
   const toggleTimer = () => {
     if (Timer.timerStatus === "solving") {
@@ -61,11 +54,18 @@
   };
 
   const startInspection = () => {
-    $Times[counter].time = 0;
-    $Times[counter].penalty = "none";
+    $Times.push({
+    time: 0,
+    penalty: "none",
+    })
+    counter++;
     Timer.timerColor = "pink";
     Timer.timerStatus = "inspection";
   };
+
+  // things that should happen on start inspection
+  // add blank time to $Times, counter++
+  // add prev solve to localstorage
 
   // set inspection timer and update inspection warning
   $: {
@@ -174,11 +174,17 @@
 <main class="timer-container">
   <div class="timer" style="color: {Timer.timerColor}">
     <div class="penalty-menu">
-      <button on:click={() => $Times[counter - 1].penalty = "none"}>-</button>
-      <button on:click={() => $Times[counter - 1].penalty = "+2"}>+2</button>
-      <button on:click={() => $Times[counter - 1].penalty = "DNF"}>DNF</button>
+      <button on:click={() => $Times[counter].penalty = "none"}>-</button>
+      <button on:click={() => $Times[counter].penalty = "+2"}>+2</button>
+      <button on:click={() => $Times[counter].penalty = "DNF"}>DNF</button>
     </div>
-    <h1>{displayedTime($Times[counter])}</h1>
+    <h1>
+      {#if $Times[counter] !== undefined}
+        {displayedTime($Times[counter])}
+      {:else}
+        0.00
+      {/if}
+    </h1>
     <h2>{15 - inspection.time}</h2>
     <h3>{inspection.warning}</h3>
   </div>
