@@ -25,3 +25,25 @@
     background-color: white;
     color: #242424;
 }
+
+.solves-container {
+    display: flex;
+    font-size: 2rem;
+    justify-content: center;
+    align-items: center;
+
+    .solve {
+        margin: 0 1rem;
+    }
+
+    width: 100vw;
+    height: 10vh;
+    color: #ffffff;
+}
+
+.congrats {
+    margin: 10%;
+    font-size: 3rem;
+    font-family: monospace;
+    color: #ffffff;
+}

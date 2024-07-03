@@ -12,6 +12,11 @@
 	  isHolding: false,
 	  solves: [] as number[], // Store solving times
 	};
+
+	let solvesObject = {
+		best: Number(Infinity) as number,
+		average: Number(Infinity) as number,
+	};
   
 	// Start inspection phase
 	const startInspection = () => {
@@ -45,7 +50,7 @@
 		}
 		switch (timerObject.mode) {
 			case 'idle':
-				startInspection();
+				timerObject.color = 'green';
 				break;
 			case 'inspection':
 				if(timerObject.isHolding && (Date.now() - timerObject.holdStartTime >= 550)){
@@ -55,8 +60,6 @@
 				break;
 			case 'solving':
 				clearInterval(timerObject.interval);
-				timerObject.mode = 'idle';
-				timerObject.solves.push(timerObject.value);
 				break;
 			}
 		}
@@ -66,13 +69,29 @@
 	const handleKeyUp = (event: KeyboardEvent) => {
     if (event.key === ' ' && timerObject.isHolding) {
 		timerObject.isHolding = false;
-		if (timerObject.mode === 'inspection' && Date.now() - timerObject.holdStartTime >= 550) {
+		if (timerObject.mode === 'idle') {
+			startInspection();
+		} else if (timerObject.mode === 'inspection' && Date.now() - timerObject.holdStartTime >= 550) {
 			timerObject.mode = 'ready';
 			timerObject.color = 'green';
 		} else if (timerObject.mode === 'ready') {
 			clearInterval(timerObject.interval);
 			timerObject.color = 'white';
 			startTimer();
+		} else if(timerObject.mode === 'solving') {
+			timerObject.solves.push(timerObject.value);
+
+			solvesObject.best = Math.min(solvesObject.best, Number((timerObject.value/100).toFixed(2)));
+
+			if (timerObject.solves.length >= 4) {
+				const sortedSolves = timerObject.solves.slice().sort((a, b) => a - b);
+				const middleSolves = sortedSolves.slice(1, 4);
+				const average = middleSolves.reduce((sum, solve) => sum + solve, 0) / 3;
+				solvesObject.average = Number((average/100).toFixed(2));
+			}	
+
+			timerObject.color = 'white';
+			timerObject.mode = 'idle';
 		}
 	}};
 
@@ -91,16 +110,24 @@
   
 <main class="timer-container">
 	<Scramble />
-	<div class="timer" style="color: {timerObject.color};">
-		{#if timerObject.mode === 'inspection' || timerObject.mode === 'ready'}
-			{timerObject.inspection > 0 ? timerObject.inspection : 'GO!'}
-		{:else}
-			{(timerObject.value / 100).toFixed(2)}
-		{/if}
-	</div>
-	<div class="solves">
+
+	{#if timerObject.solves.length < 5} 
+		<div class="timer" style="color: {timerObject.color};">
+			{#if timerObject.mode === 'inspection' || timerObject.mode === 'ready'}
+				{timerObject.inspection > 0 ? timerObject.inspection : 'GO!'}
+			{:else}
+				{(timerObject.value / 100).toFixed(2)}
+			{/if}
+		</div>
+	{:else}
+		<div class="congrats">
+			Congratulations you finished with an average of {solvesObject.average} and a best time of {solvesObject.best} seconds! 
+		</div>	
+	{/if}
+
+	<div class="solves-container">
 		{#each timerObject.solves as solve}
-			<div>{(solve / 100).toFixed(2)}</div>
+			<div class="solve">{(solve / 100).toFixed(2)}</div>
 		{/each}
 	</div>
 </main>
